@@ -36,6 +36,7 @@ class Client():
             "annonce_begin" : self.annonce_begin,
             "annonce_finale" : self.get_contract,
             "score" : self.get_score,
+            "print" : self.echo,
         }
         self.queue = []
         self.pli_courant = []
@@ -261,6 +262,12 @@ class Client():
         if len(self.pli_courant) == 4:
             self.pli_courant = []
         print("{} joue : {}".format(joueur, card))
+
+    def echo(self, args):
+        msg = ""
+        for elem in args:
+            msg += elem + " "
+        print(msg)
 
     def annonce_begin(self):
         pass
