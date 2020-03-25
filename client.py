@@ -10,8 +10,6 @@ except ImportError:
     import termios 
     OS = "UNIX"
 
-ip = "86.195.0.150"
-
 CONTRACTS = ["80", "90", "100", "110", "120", "130", "140", "150", "160", "170", "180", "capot", "generale"]
 
 COLORS = ["coeur", "pique", "carreau", "trefle", "tout-atout", "sans-atout"]
