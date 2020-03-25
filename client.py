@@ -16,10 +16,10 @@ CONTRACTS = ["80", "90", "100", "110", "120", "130", "140", "150", "160", "170",
 
 COLORS = ["coeur", "pique", "carreau", "trefle", "tout-atout", "sans-atout"]
 
-TRAD = {"S" : "pique", "H" : "coeur", "D" : "carreau", "C" : "trefle",
-        "pique" : "S", "coeur" : "H", "carreau" : "D", "trefle" : "C" }
-ATOUT = ["J", "9", "A", "10", "K", "Q", "8", "7"]
-NORMAL = ["A", "10", "K", "Q", "J", "9", "8", "7"]
+TRAD = {"♤" : "pique", "♡" : "coeur", "♢" : "carreau", "♧" : "trefle",
+        "pique" : "♤", "coeur" : "♡", "carreau" : "♢", "trefle" : "♧" }
+ATOUT = ["J", "9", "AS", "10", "K", "Q", "8", "7"]
+NORMAL = ["AS", "10", "K", "Q", "J", "9", "8", "7"]
 
 class Client():
     def __init__(self):
@@ -205,7 +205,17 @@ class Client():
             playables = self.get_atout_above(playables)
         return playables
 
+    def transform_card(self, card):
+        ret = ""
+        mots = card.split(" ")
+        if len(mots) != 2:
+            return "wrong"
+        ret = mots[0]
+        ret += TRAD[mots[1]]
+        return ret
+
     def parse_card(self, card, playables):
+        card = self.transform_card(card)
         if card not in self.hand:
             return False
         if card not in playables:
@@ -214,25 +224,46 @@ class Client():
         return card
 
     def play(self):
+        self.hand.sort(key=self.custom_key)
         print("voici ta main : {}".format(self.hand))
         playables = self.get_playables()
-        print(playables)
+        print("cartes jouables :", playables)
         card = self.get_input("Joue une carte \n")
         card = self.parse_card(card, playables)
         while card == False:
             print("erreur, carte invalide")
             print("voici ta main : {}".format(self.hand))
+            print("cartes jouables :", playables)
             card = self.get_input("Joue une carte \n")
             card = self.parse_card(card, playables)
         self._send_server(card)
+
+    def custom_key(self, card):
+        order = []
+        colors = ["♤", "♡", "♧", "♢"]
+        if self.atout == None:
+            for color in colors:
+                for val in NORMAL:
+                    order.append(val + color)
+        else:
+            for val in ATOUT:
+                order.append(val + TRAD[self.atout])
+            colors.remove(TRAD[self.atout])
+            for color in colors:
+                for val in NORMAL:
+                    order.append(val + color)
+        return order.index(card)
+        
 
     def get_cards(self, args):
         self.hand = []
         self.highest_annonce = 0
         self.pli_courant = []
+        self.atout = None
         for card in args:
             if card != '':
                 self.hand.append(card)
+        self.hand.sort(key=self.custom_key)
         print("Ta main : {}".format(self.hand))
 
     def update_annonce(self, val):
