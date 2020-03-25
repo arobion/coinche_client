@@ -10,6 +10,8 @@ except ImportError:
     import termios 
     OS = "UNIX"
 
+IP = sys.argv[1]
+
 CONTRACTS = ["80", "90", "100", "110", "120", "130", "140", "150", "160", "170", "180", "capot", "generale"]
 
 COLORS = ["coeur", "pique", "carreau", "trefle", "tout-atout", "sans-atout"]
@@ -25,7 +27,8 @@ class Client():
         self.hand = []
         self.actions = {
             "make_annonce" : self.make_annonce,
-            "play" : self.play
+            "play" : self.play,
+            "name" : self.name
         }
         self.infos = {
             "get_cards" : self.get_cards,
@@ -54,7 +57,7 @@ class Client():
     def init_connection(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(5)
-        sock.connect(("localhost", 4242))
+        sock.connect((IP, 4242))
         sock.settimeout(None)
         return sock
     
@@ -81,7 +84,6 @@ class Client():
             while len(self.queue) != 0:
                 self.decrypt_msg()
 
-    # TODO : improve parsing annonce : include un verificateur d'annonce valide
     def parse_annonce(self, ann):
         if ann == "passe" or ann == "0":
             return "0"
@@ -249,7 +251,6 @@ class Client():
         self.update_annonce(val)
         print("{} annonce : {}".format(joueur, val))
 
-    # TODO : sauvegarder la carte jouee pour resoudre les cartes jouables
     def get_card(self, args):
         joueur = args.pop(0)
         card = ""
@@ -267,6 +268,11 @@ class Client():
             msg += elem + " "
         print(msg)
 
+    def name(self):
+        name = self.get_input("Hi, welcome to my amazing coinche game, made by Arobion with Love.\nPlease enter your name\n=> ")
+        print("Thanks, we are waiting to other players")
+        self._send_server(name)
+    
     def annonce_begin(self):
         pass
 
