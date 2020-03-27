@@ -176,7 +176,6 @@ class Client():
             check_atout = 1
         else:
             if self.partenaire_win() == True:
-                if 
                 playables = self.hand
                 check_atout = 0
             else:
