@@ -17,12 +17,6 @@ CONTRACTS = ["80", "90", "100", "110", "120", "130", "140", "150", "160", "170",
 
 COLORS = ["coeur", "pique", "carreau", "trefle", "tout-atout", "sans-atout"]
 
-TRAD = {"♤" : "pique", "♡" : "coeur", "♢" : "carreau", "♧" : "trefle",
-        "pique" : "♤", "coeur" : "♡", "carreau" : "♢", "trefle" : "♧",
-        "sans-atout" : ""}
-ATOUT = ["J", "9", "AS", "10", "K", "Q", "8", "7"]
-NORMAL = ["AS", "10", "K", "Q", "J", "9", "8", "7"]
-
 class Client():
     def __init__(self):
         self.stream = self.init_connection()
@@ -91,6 +85,7 @@ class Client():
         splited = ann.split(" ")
         if len(splited) != 2:
             return False
+        splited[1] = splited[1].lower()
         if splited[0] not in CONTRACTS:
             return False
         if splited[1] not in COLORS:
@@ -181,6 +176,7 @@ class Client():
             check_atout = 1
         else:
             if self.partenaire_win() == True:
+                if 
                 playables = self.hand
                 check_atout = 0
             else:

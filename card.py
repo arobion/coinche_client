@@ -30,6 +30,8 @@ class Card():
         if len(mots) != 2:
             return "wrong"
         try:
+            mots[0] = mots[0].upper()
+            mots[1] = mots[1].lower()
             return mots[0] + TRAD[mots[1]]
         except KeyError as e:
             return "wrong"
