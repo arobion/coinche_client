@@ -2,6 +2,7 @@ import socket
 import os
 import sys
 import time
+from card import Card
 
 try:
     import msvcrt
@@ -17,7 +18,8 @@ CONTRACTS = ["80", "90", "100", "110", "120", "130", "140", "150", "160", "170",
 COLORS = ["coeur", "pique", "carreau", "trefle", "tout-atout", "sans-atout"]
 
 TRAD = {"♤" : "pique", "♡" : "coeur", "♢" : "carreau", "♧" : "trefle",
-        "pique" : "♤", "coeur" : "♡", "carreau" : "♢", "trefle" : "♧" }
+        "pique" : "♤", "coeur" : "♡", "carreau" : "♢", "trefle" : "♧",
+        "sans-atout" : ""}
 ATOUT = ["J", "9", "AS", "10", "K", "Q", "8", "7"]
 NORMAL = ["AS", "10", "K", "Q", "J", "9", "8", "7"]
 
@@ -53,7 +55,6 @@ class Client():
 
         return input(msg)
         
-
     def init_connection(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(5)
@@ -109,49 +110,37 @@ class Client():
             ann = self.parse_annonce(ann)
         self._send_server(ann)
 
+    def update_annonce(self, val):
+        if val == "passe" or val == "0":
+            return
+        mots = val.split(" ")
+        self.highest_annonce = int(mots[0])
+        self.atout = mots[1]
+        for card in self.hand:
+            card.set_atout(self.atout)
+
+    def get_annonce(self, args):
+        joueur = args.pop(0)
+        val = ""
+        for elem in args:
+           val += elem + " "
+        val = val[:-1]
+        self.update_annonce(val)
+        print("{} annonce : {}".format(joueur, val))
+    
     def get_same_colors(self, card):
-        color = card[-1]
-        ret = []
-        for elem in self.hand:
-            if elem[-1] == color:
-                ret.append(elem)
-        return ret
+        return [elem for elem in self.hand if elem.color == card.color]
 
     def get_atouts(self):
-        ret = []
-        for card in self.hand:
-            if card[-1] == TRAD[self.atout]:
-                ret.append(card)
-        return ret
+        return [elem for elem in self.hand if elem.is_atout == True]
 
     def is_atout(self, card):
-        if TRAD[card[-1]] == self.atout:
-            return True
-        return False
-
-    def is_better(self, card1, card2, first):
-        if card1 == card2:
-            return False
-        if card1[-1] == card2[-1]:
-            if card1[-1] == TRAD[self.atout]:
-                if ATOUT.index(card2[:-1]) < ATOUT.index(card1[:-1]):
-                    return True
-                else:
-                    return False
-            else:
-                if NORMAL.index(card2[:-1]) < NORMAL.index(card1[:-1]):
-                    return True
-                else:
-                    return False
-        else:
-            if card2[-1] == TRAD[self.atout]:
-                return True
-            return False
+        return card.is_atout
 
     def get_best_card(self):
         best = self.pli_courant[0]
         for card in self.pli_courant:
-            if self.is_better(best, card, self.pli_courant) == True:
+            if card > best:
                 best = card
         return best
 
@@ -166,21 +155,22 @@ class Client():
     def get_atout_above(self, lst):
         best = None
         for card in self.pli_courant:
-            if card[-1] == TRAD[self.atout]:
+            if card.is_atout == True:
                 if best == None:
                     best = card
-                elif ATOUT.index(best[:-1]) > ATOUT.index(card[:-1]):
+                elif best.position() > card.position():
                     best = card
         if best == None:
             return lst
         ret = []
         for card in lst:
-            if ATOUT.index(best[:-1]) > ATOUT.index(card[:-1]):
+            if best.position() > card.position():
                 ret.append(card)
         if ret == []:
             return lst
         return ret
 
+    # TODO : check atout above on partenaire
     def get_playables(self):
         if len(self.pli_courant) == 0:
             return self.hand
@@ -205,17 +195,8 @@ class Client():
             playables = self.get_atout_above(playables)
         return playables
 
-    def transform_card(self, card):
-        ret = ""
-        mots = card.split(" ")
-        if len(mots) != 2:
-            return "wrong"
-        ret = mots[0]
-        ret += TRAD[mots[1]]
-        return ret
-
     def parse_card(self, card, playables):
-        card = self.transform_card(card)
+        card = Card(card, self, translate=True)
         if card not in self.hand:
             return False
         if card not in playables:
@@ -224,7 +205,6 @@ class Client():
         return card
 
     def play(self):
-        self.hand.sort(key=self.custom_key)
         print("voici ta main : {}".format(self.hand))
         playables = self.get_playables()
         print("cartes jouables :", playables)
@@ -236,24 +216,7 @@ class Client():
             print("cartes jouables :", playables)
             card = self.get_input("Joue une carte \n")
             card = self.parse_card(card, playables)
-        self._send_server(card)
-
-    def custom_key(self, card):
-        order = []
-        colors = ["♤", "♡", "♧", "♢"]
-        if self.atout == None:
-            for color in colors:
-                for val in NORMAL:
-                    order.append(val + color)
-        else:
-            for val in ATOUT:
-                order.append(val + TRAD[self.atout])
-            colors.remove(TRAD[self.atout])
-            for color in colors:
-                for val in NORMAL:
-                    order.append(val + color)
-        return order.index(card)
-        
+        self._send_server(card.name)
 
     def get_cards(self, args):
         self.hand = []
@@ -262,25 +225,9 @@ class Client():
         self.atout = None
         for card in args:
             if card != '':
-                self.hand.append(card)
-        self.hand.sort(key=self.custom_key)
+                self.hand.append(Card(card, self))
+        self.hand.sort()
         print("Ta main : {}".format(self.hand))
-
-    def update_annonce(self, val):
-        if val == "passe" or val == "0":
-            return
-        mots = val.split(" ")
-        self.highest_annonce = int(mots[0])
-        self.atout = mots[1]
-
-    def get_annonce(self, args):
-        joueur = args.pop(0)
-        val = ""
-        for elem in args:
-           val += elem + " "
-        val = val[:-1]
-        self.update_annonce(val)
-        print("{} annonce : {}".format(joueur, val))
 
     def get_card(self, args):
         joueur = args.pop(0)
@@ -288,9 +235,13 @@ class Client():
         for elem in args:
             card += elem + " "
         card = card[:-1]
+        card = Card(card, self)
         self.pli_courant.append(card)
         if len(self.pli_courant) == 4:
             self.pli_courant = []
+        if len(self.pli_courant) == 1:
+            self.current_color = card.color
+        card.set_atout(self.atout)
         print("{} joue : {}".format(joueur, card))
 
     def echo(self, args):
@@ -301,13 +252,14 @@ class Client():
 
     def name(self):
         name = self.get_input("Hi, welcome to my amazing coinche game, made by Arobion with Love.\nPlease enter your name\n=> ")
-        print("Thanks, we are waiting to other players")
+        print("Thanks, we are waiting for other players")
         self._send_server(name)
     
     def annonce_begin(self):
         pass
 
-    def get_contract(self):
+    def get_contract(self, args):
+        self.hand.sort()
         pass
 
     def get_score(self):
