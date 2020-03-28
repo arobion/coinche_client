@@ -129,9 +129,6 @@ class Client():
     def get_atouts(self):
         return [elem for elem in self.hand if elem.is_atout == True]
 
-    def is_atout(self, card):
-        return card.is_atout
-
     def get_best_card(self):
         best = self.pli_courant[0]
         for card in self.pli_courant:
@@ -173,7 +170,8 @@ class Client():
         check_atout = 0
         if same_colors != []:
             playables = same_colors
-            check_atout = 1
+            if playables[0].is_atout:
+                check_atout = 1
         else:
             if self.partenaire_win() == True:
                 playables = self.hand
