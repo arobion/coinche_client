@@ -1,109 +1,251 @@
-import socket
-import os
 import sys
-import time
+import threading
+import random
+
+
+import pygame
+from pygame_utils import *
+from pygame.locals import *
+
+from server_com import Client
 from card import Card
 
-try:
-    import msvcrt
-    OS = "WINDOWS"
-except ImportError:
-    import termios 
-    OS = "UNIX"
+BLACK = (10, 10, 10)
+WHITE = (255, 255, 255)
+GREY = (200, 200, 200)
+GREEN = (50, 205, 50)
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
+LAST_STATE = 4
 
-IP = sys.argv[1]
+class ButtonSprite(pygame.sprite.Sprite):
+    def __init__(self, txt, pos, size=(40, 40)):
+        super().__init__()
+        self.color = WHITE  # the static (normal) color
+        self.bg = self.color  # actual background color, can change on mouseover
+        self.fg = BLACK # text color
+#        self.size = size
 
-CONTRACTS = ["80", "90", "100", "110", "120", "130", "140", "150", "160", "170", "180", "capot", "generale"]
+        self.font = pygame.font.Font(None, 20)
+        self.txt = str(txt)
+        self.txt_surf = self.font.render(self.txt, 1, self.fg)
+        self.txt_rect = self.txt_surf.get_rect(center=[s//2 for s in size])
 
-COLORS = ["coeur", "pique", "carreau", "trefle", "tout-atout", "sans-atout"]
+        self.surface = pygame.surface.Surface(size)
+        self.rect = self.surface.get_rect(center=pos)
 
-class Client():
+    def draw(self, screen):
+        self.mouseover()
+ 
+        self.surface.fill(self.bg)
+        self.surface.blit(self.txt_surf, self.txt_rect)
+        screen.blit(self.surface, self.rect)
+
+    def mouseover(self):
+        self.bg = self.color
+        pos = pygame.mouse.get_pos()
+        if self.rect.collidepoint(pos):
+            self.bg = GREY
+        
+
+    def call_back(self):
+        self.color = GREY
+#        print(self.txt)
+        return self.txt
+        
+class PlayerSpriteHandler():
+    def __init__(self, name, pos):
+        self.name = name
+        if pos == "Ouest":
+            self.x_ann = 10
+            self.y_ann = 300
+            self.x_card = 250
+            self.y_card = 140
+        elif pos == "Nord":
+            self.x_ann = 350
+            self.y_ann = 10
+            self.x_card = 350
+            self.y_card = 50
+        elif pos == "Est":
+            self.x_ann = 700
+            self.y_ann = 300
+            self.x_card = 450
+            self.y_card = 140
+        elif pos == "Sud":
+            self.x_ann = 350
+            self.y_ann = 380
+            self.x_card = 350
+            self.y_card = 200
+        else:
+            print("ERROR")
+            sys.exit()
+
+        self.pos = pos
+        self.last_annonce = None
+        self.card = None
+    
+    def annonce(self, val):
+        self.last_annonce = val
+        return val
+
+    def play(self, card):
+        self.card = card
+        self.card.rect.x = self.x_card
+        self.card.rect.y = self.y_card
+
+
+class GuiHandler():
     def __init__(self):
-        self.stream = self.init_connection()
-        self.hand = []
+        # gui_vars
+        self.state = None
+        self.screen = None
+        self.clock = None
+        self.ip = None
+        self.name = None
+
+        # pointer_func_tabs
+        self.display_func = {
+            0 : self.wait,
+            1 : self.display_cards,
+            2 : self.display_annonce,
+            3 : self.display_cards,
+            }
         self.actions = {
-            "make_annonce" : self.make_annonce,
+            "name" : self.waiting_players_screen,
+            "make_annonce" : self.make_annonce_screen,
             "play" : self.play,
-            "name" : self.name
         }
         self.infos = {
             "get_cards" : self.get_cards,
             "annonce" : self.get_annonce,
-            "card" : self.get_card,
-            "annonce_begin" : self.annonce_begin,
             "annonce_finale" : self.get_contract,
+            "card" : self.get_card,
             "score" : self.get_score,
             "print" : self.echo,
         }
-        self.queue = []
+
+        # server_vars
+        self.client = None
+
+        # coinche_vars
+        self.hand = [] # contains sprites
         self.pli_courant = []
         self.highest_annonce = 0
-        self.wait_for_server()
+        self.atout = None
+        self.players = {}
 
-    def get_input(self, msg):
-        if OS == "WINDOWS":
-            while msvcrt.kbhit():
-                msvcrt.getch()
-        else:
-            termios.tcflush(sys.stdin, termios.TCIFLUSH)
-
-        return input(msg)
-        
-    def init_connection(self):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(5)
-        sock.connect((IP, 4242))
-        sock.settimeout(None)
-        return sock
+        # tmp_vars
+        self.tmp_val = None
+        self.tmp_color = None
+        self.playables = []
     
-    def _read_server(self):
-        msg = self.stream.recv(1024).decode()
-        msg = msg.split("|")
-        for elem in msg:
-            self.queue.append(elem)
+    def init(self):
+        self.screen.fill(GREEN)
+        self.state += 1
 
-    def _send_server(self, msg):
-        self.stream.send(msg.encode())
+    def quit(self):
+        sys.exit()
+    
+    def wait(self):
+        text = pygame.font.Font(None, 40).render("Waiting for 4 players, don't worry", 1, BLACK)
+        self.screen.blit(text, (200,50))
 
-    def decrypt_msg(self):
-        msg = self.queue.pop(0).split(" ")
-        if msg[0] == "info":
-            self.infos[msg[1]](msg[2:])
-        if msg[0] == "action":
-            self.actions[msg[1]]()
+    def construct_table(self, args):
+        player1 = args[1]
+        player2 = args[3]
+        player3 = args[5]
+        player4 = args[7]
+        print("construct", player1, player2, player3, player4)
+        self.players = {}
+        if player1 == self.name:
+            self.players[player2] = PlayerSpriteHandler(player2, "Ouest")
+            self.players[player3] = PlayerSpriteHandler(player2, "Nord")
+            self.players[player4] = PlayerSpriteHandler(player2, "Est")
+        elif player2 == self.name:
+            self.players[player3] = PlayerSpriteHandler(player2, "Ouest")
+            self.players[player4] = PlayerSpriteHandler(player2, "Nord")
+            self.players[player1] = PlayerSpriteHandler(player2, "Est")
+        elif player3 == self.name:
+            self.players[player4] = PlayerSpriteHandler(player2, "Ouest")
+            self.players[player1] = PlayerSpriteHandler(player2, "Nord")
+            self.players[player2] = PlayerSpriteHandler(player2, "Est")
+        elif player4 == self.name:
+            self.players[player1] = PlayerSpriteHandler(player2, "Ouest")
+            self.players[player2] = PlayerSpriteHandler(player2, "Nord")
+            self.players[player3] = PlayerSpriteHandler(player2, "Est")
+        self.players[self.name] = PlayerSpriteHandler(player2, "Sud")
 
-    def wait_for_server(self):
-        print('goes to waiting mode')
-        while True:
-            msg = self._read_server()
-            while len(self.queue) != 0:
-                self.decrypt_msg()
 
-    def parse_annonce(self, ann):
-        if ann == "passe" or ann == "0":
-            return "0"
-        splited = ann.split(" ")
-        if len(splited) != 2:
-            return False
-        splited[1] = splited[1].lower()
-        if splited[0] not in CONTRACTS:
-            return False
-        if splited[1] not in COLORS:
-            return False
-        if int(splited[0]) <= self.highest_annonce:
-            return False
-        return ann
+    def echo(self, args):
+        if args[0] == "1" and args[2] == "2":
+            self.construct_table(args)
+        elif args[1] == "remporte":
+            self.players[args[0]].last_annonce = "win"
 
-    def make_annonce(self):
-        print("voici ta main : {}".format(self.hand))
-        ann = self.get_input("Fais ton annonce \n")
-        ann = self.parse_annonce(ann)
-        while ann == False:
-            print("erreur, annonce invalide")
-            print("voici ta main : {}".format(self.hand))
-            ann = self.get_input("Fais ton annonce \n")
-            ann = self.parse_annonce(ann)
-        self._send_server(ann)
+    def display_cards(self):
+        pass
+
+    def get_score(self):
+        pass
+
+    def display_annonce(self):
+        for button in self.buttons_value:
+            button.draw(self.screen)
+        for button in self.buttons_color:
+            button.draw(self.screen)
+
+    def handle_state(self):
+        self.state += 1
+        if self.state > LAST_STATE:
+            self.state = 2
+
+    def print_state(self):
+        self.screen.fill(GREEN)
+#        print(self.state)
+
+    def gui_sort(self):
+        i = 0
+        for elem in self.hand:
+            elem.positionne(i)
+            i += 1
+
+    def get_contract(self, args):
+        self.hand.sort()
+        self.gui_sort()
+        for player in self.players.values():
+            player.last_annonce = None
+        self.state = 1
+
+    def get_card(self, args):
+        joueur = args.pop(0)
+        card = ""
+        for elem in args:
+            card += elem + " "
+        card = card[:-1]
+        card = Card(card, self)
+        self.pli_courant.append(card)
+        if len(self.pli_courant) == 4:
+            self.pli_courant = []
+        if len(self.pli_courant) == 1:
+            self.current_color = card.color
+            for elem in self.players.values():
+                elem.card = None
+                elem.last_annonce = None
+        card.set_atout(self.atout)
+        self.players[joueur].play(Card(card.name, self))
+#        print("{} joue : {}".format(joueur, card))
+
+    def get_cards(self, args):
+        self.hand = []
+        self.highest_annonce = 0
+        self.pli_courant = []
+        self.atout = None
+        for card in args:
+            if card != '':
+                self.hand.append(Card(card, self))
+        self.hand.sort()
+        self.gui_sort()
+        self.state = 1
 
     def update_annonce(self, val):
         if val == "passe" or val == "0":
@@ -118,11 +260,14 @@ class Client():
         joueur = args.pop(0)
         val = ""
         for elem in args:
-           val += elem + " "
+            val += elem + " "
         val = val[:-1]
         self.update_annonce(val)
-        print("{} annonce : {}".format(joueur, val))
-    
+#        if joueur != self.name:
+        if val == "0":
+            val = "passe"
+        self.players[joueur].annonce(val)
+
     def get_same_colors(self, card):
         return [elem for elem in self.hand if elem.color == card.color]
 
@@ -162,7 +307,6 @@ class Client():
             return lst
         return ret
 
-    # TODO : check atout above on partenaire
     def get_playables(self):
         if len(self.pli_courant) == 0:
             return self.hand
@@ -188,74 +332,150 @@ class Client():
             playables = self.get_atout_above(playables)
         return playables
 
-    def parse_card(self, card, playables):
-        card = Card(card, self, translate=True)
-        if card not in self.hand:
-            return False
-        if card not in playables:
-            return False
-        self.hand.remove(card)
-        return card
-
     def play(self):
-        print("voici ta main : {}".format(self.hand))
-        playables = self.get_playables()
-        print("cartes jouables :", playables)
-        card = self.get_input("Joue une carte \n")
-        card = self.parse_card(card, playables)
-        while card == False:
-            print("erreur, carte invalide")
-            print("voici ta main : {}".format(self.hand))
-            print("cartes jouables :", playables)
-            card = self.get_input("Joue une carte \n")
-            card = self.parse_card(card, playables)
-        self._send_server(card.name)
+        self.playables = self.get_playables()
+        if len(self.playables) != len(self.hand):
+            for card in self.playables:
+                card.moveUp()
+        self.state = 3
+        print(self.playables)
 
-    def get_cards(self, args):
-        self.hand = []
-        self.highest_annonce = 0
-        self.pli_courant = []
-        self.atout = None
-        for card in args:
-            if card != '':
-                self.hand.append(Card(card, self))
-        self.hand.sort()
-        print("Ta main : {}".format(self.hand))
+    def make_annonce_screen(self):
+        self.tmp_val = None
+        self.tmp_color = None
+        self.buttons_value = []
+        self.buttons_color = []
+        if self.highest_annonce != 0:
+            dep = self.highest_annonce + 10
+        else:
+            dep = 80
+        for val in range(dep, 181, 10):
+            self.buttons_value.append(ButtonSprite(val, calc_buttonValue_pos(dep, val)))
+        self.buttons_value.append(ButtonSprite("passe", [350, 280], size=(100, 30)))
+        for color in ["coeur", "pique", "carreau", "trefle"]:
+            self.buttons_color.append(ButtonSprite(color, calc_buttonColor_pos(color), size=(100, 30)))
+        self.state = 2
+        
 
-    def get_card(self, args):
-        joueur = args.pop(0)
-        card = ""
-        for elem in args:
-            card += elem + " "
-        card = card[:-1]
-        card = Card(card, self)
-        self.pli_courant.append(card)
-        if len(self.pli_courant) == 4:
-            self.pli_courant = []
-        if len(self.pli_courant) == 1:
-            self.current_color = card.color
-        card.set_atout(self.atout)
-        print("{} joue : {}".format(joueur, card))
+    def waiting_players_screen(self):
+        text = pygame.font.Font(None, 40).render("Successfully connected to the server", 1, BLACK)
+        self.screen.blit(text, (100,50))
+        text = pygame.font.Font(None, 40).render("Waiting for other players", 1, BLACK)
+        self.screen.blit(text, (160,100))
+        text = pygame.font.Font(None, 25).render("Enter your name : ", 1, BLACK)
+        self.screen.blit(text, (50,200))
+        self.name = get_input(self.screen, 200, 30, 202, 200, GREEN, BLACK)
+        if self.name == '':
+            self.name = "player_{}".format(random.randint(0, 10000))
+        self.client._send_server(self.name)
+        self.state = 0
 
-    def echo(self, args):
-        msg = ""
-        for elem in args:
-            msg += elem + " "
-        print(msg)
 
-    def name(self):
-        name = self.get_input("Hi, welcome to my amazing coinche game, made by Arobion with Love.\nPlease enter your name\n=> ")
-        print("Thanks, we are waiting for other players")
-        self._send_server(name)
-    
-    def annonce_begin(self):
-        pass
+    def get_from_server(self):
+        if len(self.client.queue) != 0:
+            msg = self.client.queue.pop(0).split(" ")
+            if msg[0] == "info":
+                self.infos[msg[1]](msg[2:])
+            if msg[0] == "action":
+                self.actions[msg[1]]()
 
-    def get_contract(self, args):
-        self.hand.sort()
-        pass
+    def check_values(self, pos):
+        for button in self.buttons_value:
+            if button.rect.collidepoint(pos):
+                self.tmp_val = button.call_back()
+            else:
+                button.color = WHITE
 
-    def get_score(self):
-        pass
+    def check_color(self, pos):
+        for button in self.buttons_color:
+            if button.rect.collidepoint(pos):
+                self.tmp_color = button.call_back()
+            else:
+                button.color = WHITE
 
-client = Client()
+    def parse_annonce(self):
+        pos = pygame.mouse.get_pos()
+        self.check_values(pos)
+        self.check_color(pos)
+        if self.tmp_val == "passe":
+            self.client._send_server("passe")
+            self.state = 1
+            return 
+        if self.tmp_val and self.tmp_color:
+            self.client._send_server(self.tmp_val + " " + self.tmp_color)
+            self.state = 1
+            return
+
+    def parse_card(self):
+        pos = pygame.mouse.get_pos()
+        for card in self.hand:
+            if card.rect.collidepoint(pos):
+                self.client._send_server(card.name)
+                self.hand.remove(card)
+                if len(self.playables) != len(self.hand) - 1:
+                    for elem in self.playables:
+                        elem.moveDown()
+                self.state = 1
+                return
+
+    def check_click(self):
+        if self.state == 2:
+            self.parse_annonce()
+        elif self.state == 3:
+            self.parse_card()
+
+    def display_players(self):
+        for player in self.players.values():
+            if player.last_annonce:
+                text = pygame.font.Font(None, 20).render(player.last_annonce, 1, BLACK)
+                self.screen.blit(text, (player.x_ann, player.y_ann))
+            if player.card:
+#                player.card.rect.x = player.x_card
+#                player.card.rect.y = player.y_card
+                player.card.draw(self.screen)
+
+    def main_loop(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                self.check_click()
+
+        self.screen.fill(GREEN)
+        self.get_from_server()
+        self.display_players()
+        self.display_func[self.state]()
+        for elem in self.hand:
+            elem.draw(self.screen)
+        pygame.display.flip()
+        self.clock.tick(60)
+        return True
+
+    def ip_screen(self):
+        text = pygame.font.Font(None, 40).render("Welcome", 1, BLACK)
+        self.screen.blit(text, (280,50))
+        text = pygame.font.Font(None, 25).render("Entrer l'IP du serveur : ", 1, BLACK)
+        self.screen.blit(text, (50, 150))
+        ip = get_input(self.screen, 200, 30, 240, 150, GREEN, BLACK)
+        if ip == '':
+            ip = "localhost"
+        self.client = Client(ip)
+        self.state = 0
+
+    def start(self):
+        pygame.init()
+        pygame.display.set_icon(pygame.image.load("card_images/valet_pique.png"))
+        self.screen = pygame.display.set_mode((800, 600))
+        self.clock = pygame.time.Clock()
+        pygame.display.set_caption("Pycoinche")
+        self.state = 0
+
+        self.screen.fill(GREEN)
+        self.ip_screen()
+
+        while self.main_loop() == True:
+            pass
+        print("exit")
+
+gui = GuiHandler()
+gui.start()

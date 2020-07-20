@@ -1,10 +1,13 @@
+import os
+import pygame
 ATOUT = ["J", "9", "AS", "10", "K", "Q", "8", "7"]
 NORMAL = ["AS", "10", "K", "Q", "J", "9", "8", "7"]
 TRAD = {"♤" : "pique", "♡" : "coeur", "♢" : "carreau", "♧" : "trefle",
-        "pique" : "♤", "coeur" : "♡", "carreau" : "♢", "trefle" : "♧",}
+        "pique" : "♤", "coeur" : "♡", "carreau" : "♢", "trefle" : "♧"}
 
-class Card():
+class Card(pygame.sprite.Sprite):
     def __init__(self, name, client, translate=False):
+        ## Coinche part
         if translate == True:
             name = self.translate_name(name)
         self.name = name
@@ -14,6 +17,58 @@ class Card():
         self.order = NORMAL
         self.client = client
         self.str = self.strize(name)
+
+        ## Sprite part
+        super().__init__()
+        # load sprite
+        self.image = pygame.image.load(self.get_path_sprite())
+        self.image = pygame.transform.scale(self.image, (80, 120))
+        self.image = self.image.convert()
+        self.rect = self.image.get_rect()
+
+        # positionne sprite
+        self.move = 15
+        self.positionne(0)
+
+    def draw(self, screen):
+        screen.blit(self.image, self.rect)
+
+    def moveUp(self):
+        self.rect.y -= self.move
+
+    def moveDown(self):
+        self.rect.y += self.move
+
+    def positionne(self, num):
+        self.rect.x =  50 + (num * 85)
+        self.rect.y = 400
+
+    def get_path_sprite(self):
+        path = os.getcwd()
+        path += "/card_images/"
+        val = self.name[:-1]
+        color = self.name[-1]
+        if val == "AS":
+            path += "as"
+        elif val == "K":
+            path += "roi"
+        elif val == "Q":
+            path += "dame"
+        elif val == "J":
+            path += "valet"
+        else:
+            path += val
+        path += "_"
+        if color == "♤":
+            path += "pique.png"
+        elif color == "♡":
+            path += "coeur.png"
+        elif color == "♢":
+            path += "carreau.png"
+        elif color == "♧":
+            path += "trefle.png"
+
+        return path
 
     def strize(self, s):
         if self.color == "♡": # red
@@ -40,7 +95,13 @@ class Card():
         return self.order.index(self.value)
 
     def set_atout(self, atout):
-        if self.color == TRAD[atout]:
+        if atout == "s_a":
+            self.is_atout = False
+            self.order = NORMAL
+        elif atout == "t_a":
+            self.is_atout = True
+            self.order = ATOUT
+        elif self.color == TRAD[atout]:
             self.is_atout = True
             self.order = ATOUT
         else:
@@ -50,6 +111,7 @@ class Card():
     # used to sort
     def __lt__(self, other):
         colors = ["♤", "♡", "♧", "♢"]
+        print(self.client.atout)
         if self.client.atout != None:
             colors.remove(TRAD[self.client.atout])
             colors.insert(0, TRAD[self.client.atout])
