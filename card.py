@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import pygame
 ATOUT = ["J", "9", "AS", "10", "K", "Q", "8", "7"]
