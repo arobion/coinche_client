@@ -50,7 +50,6 @@ class ButtonSprite(pygame.sprite.Sprite):
 
     def call_back(self):
         self.color = GREY
-#        print(self.txt)
         return self.txt
         
 class PlayerSpriteHandler():
@@ -61,21 +60,29 @@ class PlayerSpriteHandler():
             self.y_ann = 300
             self.x_card = 250
             self.y_card = 140
+            self.x_name = 10
+            self.y_name = 280
         elif pos == "Nord":
             self.x_ann = 350
-            self.y_ann = 10
+            self.y_ann = 30
             self.x_card = 350
             self.y_card = 50
+            self.x_name = 350
+            self.y_name = 10
         elif pos == "Est":
             self.x_ann = 700
             self.y_ann = 300
             self.x_card = 450
             self.y_card = 140
+            self.x_name = 700
+            self.y_name = 280
         elif pos == "Sud":
             self.x_ann = 350
             self.y_ann = 380
             self.x_card = 350
             self.y_card = 200
+            self.x_name = 350
+            self.y_name = 580
         else:
             print("ERROR")
             sys.exit()
@@ -83,7 +90,8 @@ class PlayerSpriteHandler():
         self.pos = pos
         self.last_annonce = None
         self.card = None
-    
+        self.text = pygame.font.Font(None, 20).render(self.name, 1, BLACK)
+
     def annonce(self, val):
         self.last_annonce = val
         return val
@@ -93,6 +101,8 @@ class PlayerSpriteHandler():
         self.card.rect.x = self.x_card
         self.card.rect.y = self.y_card
 
+    def draw(self, screen):
+        screen.blit(self.text, (self.x_name, self.y_name))
 
 class GuiHandler():
     def __init__(self):
@@ -155,25 +165,24 @@ class GuiHandler():
         player2 = args[3]
         player3 = args[5]
         player4 = args[7]
-        print("construct", player1, player2, player3, player4)
         self.players = {}
         if player1 == self.name:
             self.players[player2] = PlayerSpriteHandler(player2, "Ouest")
-            self.players[player3] = PlayerSpriteHandler(player2, "Nord")
-            self.players[player4] = PlayerSpriteHandler(player2, "Est")
+            self.players[player3] = PlayerSpriteHandler(player3, "Nord")
+            self.players[player4] = PlayerSpriteHandler(player4, "Est")
         elif player2 == self.name:
-            self.players[player3] = PlayerSpriteHandler(player2, "Ouest")
-            self.players[player4] = PlayerSpriteHandler(player2, "Nord")
-            self.players[player1] = PlayerSpriteHandler(player2, "Est")
+            self.players[player3] = PlayerSpriteHandler(player3, "Ouest")
+            self.players[player4] = PlayerSpriteHandler(player4, "Nord")
+            self.players[player1] = PlayerSpriteHandler(player1, "Est")
         elif player3 == self.name:
-            self.players[player4] = PlayerSpriteHandler(player2, "Ouest")
-            self.players[player1] = PlayerSpriteHandler(player2, "Nord")
+            self.players[player4] = PlayerSpriteHandler(player4, "Ouest")
+            self.players[player1] = PlayerSpriteHandler(player1, "Nord")
             self.players[player2] = PlayerSpriteHandler(player2, "Est")
         elif player4 == self.name:
-            self.players[player1] = PlayerSpriteHandler(player2, "Ouest")
+            self.players[player1] = PlayerSpriteHandler(player1, "Ouest")
             self.players[player2] = PlayerSpriteHandler(player2, "Nord")
-            self.players[player3] = PlayerSpriteHandler(player2, "Est")
-        self.players[self.name] = PlayerSpriteHandler(player2, "Sud")
+            self.players[player3] = PlayerSpriteHandler(player3, "Est")
+        self.players[self.name] = PlayerSpriteHandler(self.name, "Sud")
 
 
     def echo(self, args):
@@ -181,7 +190,15 @@ class GuiHandler():
             self.construct_table(args)
         elif args[1] == "remporte":
             self.players[args[0]].last_annonce = "win"
+        elif args[0] == "L'equipe":
+            text = pygame.font.Font(None, 20).render("".join(args), 1, BLACK)
+            self.screen.blit(text, (100,100))
+            text = pygame.font.Font(None, 20).render("press any key to continue", 1, BLACK)
+            self.screen.blit(text, (100,200))
+            pygame.display.flip()
+            inkey = getKey()
 
+            
     def display_cards(self):
         pass
 
@@ -201,7 +218,6 @@ class GuiHandler():
 
     def print_state(self):
         self.screen.fill(GREEN)
-#        print(self.state)
 
     def gui_sort(self):
         i = 0
@@ -233,7 +249,6 @@ class GuiHandler():
                 elem.last_annonce = None
         card.set_atout(self.atout)
         self.players[joueur].play(Card(card.name, self))
-#        print("{} joue : {}".format(joueur, card))
 
     def get_cards(self, args):
         self.hand = []
@@ -338,7 +353,6 @@ class GuiHandler():
             for card in self.playables:
                 card.moveUp()
         self.state = 3
-        print(self.playables)
 
     def make_annonce_screen(self):
         self.tmp_val = None
@@ -412,7 +426,7 @@ class GuiHandler():
             if card.rect.collidepoint(pos):
                 self.client._send_server(card.name)
                 self.hand.remove(card)
-                if len(self.playables) != len(self.hand) - 1:
+                if len(self.playables) != len(self.hand):
                     for elem in self.playables:
                         elem.moveDown()
                 self.state = 1
@@ -430,8 +444,6 @@ class GuiHandler():
                 text = pygame.font.Font(None, 20).render(player.last_annonce, 1, BLACK)
                 self.screen.blit(text, (player.x_ann, player.y_ann))
             if player.card:
-#                player.card.rect.x = player.x_card
-#                player.card.rect.y = player.y_card
                 player.card.draw(self.screen)
 
     def main_loop(self):
@@ -447,6 +459,11 @@ class GuiHandler():
         self.display_func[self.state]()
         for elem in self.hand:
             elem.draw(self.screen)
+        for elem in self.players.values():
+            elem.draw(self.screen)
+        if self.highest_annonce != 0:
+            text = pygame.font.Font(None, 15).render("{} {}".format(self.highest_annonce, self.atout), 1, BLACK)
+            self.screen.blit(text, (700, 580))
         pygame.display.flip()
         self.clock.tick(60)
         return True

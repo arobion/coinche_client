@@ -111,7 +111,6 @@ class Card(pygame.sprite.Sprite):
     # used to sort
     def __lt__(self, other):
         colors = ["♤", "♡", "♧", "♢"]
-        print(self.client.atout)
         if self.client.atout != None:
             colors.remove(TRAD[self.client.atout])
             colors.insert(0, TRAD[self.client.atout])
