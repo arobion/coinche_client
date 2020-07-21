@@ -192,7 +192,7 @@ class GuiHandler():
         elif args[1] == "remporte":
             self.players[args[0]].last_annonce = "win"
         elif args[0] == "L'equipe":
-            text = pygame.font.Font(None, 20).render("".join(args), 1, BLACK)
+            text = pygame.font.Font(None, 20).render(" ".join(args), 1, BLACK)
             self.screen.blit(text, (100,100))
             text = pygame.font.Font(None, 20).render("press any key to continue", 1, BLACK)
             self.screen.blit(text, (100,200))
