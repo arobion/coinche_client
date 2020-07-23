@@ -3,14 +3,11 @@ import socket
 import threading
 
 class Client():
-    def __init__(self, ip):
-        self.stream = self.init_connection(ip)
+    def __init__(self):
         self.queue = []
-        thread = threading.Thread(target=self.wait_for_server, daemon=True)
-        thread.start()
+        self.stream = None
 
-        
-    def init_connection(self, ip):
+    def _init_connection(self, ip):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(5)
         sock.connect((ip, 4242))
@@ -23,9 +20,20 @@ class Client():
         for elem in msg:
             self.queue.append(elem)
 
-    def _send_server(self, msg):
-        self.stream.send(msg.encode())
-
-    def wait_for_server(self):
+    def _wait_for_server(self):
         while True:
             msg = self._read_server()
+
+    def connect(self, ip):
+        self.stream = self._init_connection(ip)
+
+    def listen(self):
+        thread = threading.Thread(target=self._wait_for_server, daemon=True)
+        thread.start()
+        
+    def send_server(self, msg):
+        self.stream.send(msg.encode())
+    
+    def start(self, ip):
+        self.connect(ip)
+        self.listen()

@@ -18,6 +18,7 @@ class Card(pygame.sprite.Sprite):
         self.order = NORMAL
         self.client = client
         self.str = self.strize(name)
+        self.up = False
 
         ## Sprite part
         super().__init__()
@@ -36,9 +37,12 @@ class Card(pygame.sprite.Sprite):
 
     def moveUp(self):
         self.rect.y -= self.move
+        self.up = True
 
     def moveDown(self):
-        self.rect.y += self.move
+        if self.up == True:
+            self.rect.y += self.move
+            self.up = False
 
     def positionne(self, num):
         self.rect.x =  50 + (num * 85)
@@ -111,10 +115,14 @@ class Card(pygame.sprite.Sprite):
     
     # used to sort
     def __lt__(self, other):
-        colors = ["♤", "♡", "♧", "♢"]
-        if self.client.atout != None:
-            colors.remove(TRAD[self.client.atout])
-            colors.insert(0, TRAD[self.client.atout])
+        if self.client.atout == "coeur":
+             colors = ["♡", "♤","♢", "♧"]
+        elif self.client.atout == "trefle":
+            colors = ["♧", "♡", "♤", "♢"]
+        elif self.client.atout == "carreau":
+            colors = ["♢", "♤","♡", "♧"]
+        else:
+            colors = ["♤", "♡", "♧", "♢"]
         if self.color == other.color:
             return self.position() < other.position()
         else:
