@@ -4,117 +4,13 @@ import sys
 
 
 import pygame
-from pygame_utils import *
 from pygame.locals import *
 
-from server_com import Client
 from card import Card
+from defines import *
+from pygame_utils import *
+from server_com import Client
 
-BLACK = (10, 10, 10)
-WHITE = (255, 255, 255)
-GREY = (200, 200, 200)
-GREEN = (50, 205, 50)
-RED = (255, 0, 0)
-BLUE = (0, 0, 255)
-LAST_STATE = 4
-FRAMERATE = 30
-TIME_SCORE = 5
-
-class ButtonSprite(pygame.sprite.Sprite):
-    def __init__(self, txt, pos, size=(40, 40)):
-        super().__init__()
-        self.color = WHITE  # the static (normal) color
-        self.bg = self.color  # actual background color, can change on mouseover
-        self.fg = BLACK # text color
-#        self.size = size
-
-        self.font = pygame.font.Font(None, 20)
-        self.txt = str(txt)
-        self.txt_surf = self.font.render(self.txt, 1, self.fg)
-        self.txt_rect = self.txt_surf.get_rect(center=[s//2 for s in size])
-
-        self.surface = pygame.surface.Surface(size)
-        self.rect = self.surface.get_rect(center=pos)
-
-    def draw(self, screen):
-        self.mouseover()
- 
-        self.surface.fill(self.bg)
-        self.surface.blit(self.txt_surf, self.txt_rect)
-        screen.blit(self.surface, self.rect)
-
-    def mouseover(self):
-        self.bg = self.color
-        pos = pygame.mouse.get_pos()
-        if self.rect.collidepoint(pos):
-            self.bg = GREY
-        
-
-    def call_back(self):
-        self.color = GREY
-        return self.txt
-        
-class PlayerSpriteHandler():
-    def __init__(self, name, pos):
-        self.name = name
-        if pos == "Ouest":
-            self.x_ann = 10
-            self.y_ann = 300
-            self.x_card = 250
-            self.y_card = 140
-            self.x_name = 10
-            self.y_name = 280
-        elif pos == "Nord":
-            self.x_ann = 350
-            self.y_ann = 30
-            self.x_card = 350
-            self.y_card = 50
-            self.x_name = 350
-            self.y_name = 10
-        elif pos == "Est":
-            self.x_ann = 700
-            self.y_ann = 300
-            self.x_card = 450
-            self.y_card = 140
-            self.x_name = 700
-            self.y_name = 280
-        elif pos == "Sud":
-            self.x_ann = 350
-            self.y_ann = 380
-            self.x_card = 350
-            self.y_card = 200
-            self.x_name = 350
-            self.y_name = 580
-        else:
-            print("ERROR")
-            sys.exit()
-
-        self.pos = pos
-        self.last_annonce = None
-        self.nameSprite = TextSprite(self.name, [self.x_name, self.y_name], 20)
-        self.annonceSprite = TextSprite("", [self.x_ann, self.y_ann], 20)
-        self.card = None
-
-    def annonce(self, val):
-        self.last_annonce = val
-        if val == None:
-            val = ""
-        self.annonceSprite.update_msg(val)
-#        return val
-
-    def play(self, card):
-        self.card = card
-        self.card.rect.x = self.x_card
-        self.card.rect.y = self.y_card
-
-    def draw(self, screen):
-        self.nameSprite.draw(screen)
-        self.annonceSprite.draw(screen)
-        if self.card:
-            self.card.draw(screen)
-#        if self.last_annonce:
-#            self.annonceSprite
-#        screen.blit(self.text, (self.x_name, self.y_name))
 
 class GuiHandler():
     def __init__(self):
@@ -126,17 +22,8 @@ class GuiHandler():
         self.name = None
         self.sprites = []
 
-        # pointer_func_tabs
+        # pointer to diplay_function
         self.display_func = None
-
-#        self.display_func = {
-#            0 : self.wait,
-#            1 : self.display_cards,
-#            2 : self.display_annonce,
-#            3 : self.display_cards,
-#            4 : self.create_ip_screen,
-#            5 : self.waiting_ip,
-#            }
 
         self.actions = {
             "name" : self.create_name_screen,
@@ -227,8 +114,8 @@ class GuiHandler():
             self.clock.tick(FRAMERATE)
 
     def display_annonce(self):
-        for card in self.hand:
-            card.draw(self.screen)
+#        for card in self.hand:
+#            card.draw(self.screen)
         for button in self.buttons_value:
             button.draw(self.screen)
         for button in self.buttons_color:

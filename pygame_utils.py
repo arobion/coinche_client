@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import time
-
 import pygame
 from pygame.locals import *
-BLACK = (10, 10, 10)
+
+from defines import *
 
 class TextSprite():
     def __init__(self, msg, position, font_size, font_color=BLACK, font_type=None, timer=None):
@@ -56,6 +56,96 @@ class InputSprite(TextSprite):
         if self.returned == False:
             self.uppercase = not self.uppercase
 
+class ButtonSprite(pygame.sprite.Sprite):
+    def __init__(self, txt, pos, size=(40, 40)):
+        super().__init__()
+        self.color = WHITE  # the static (normal) color
+        self.bg = self.color  # actual background color, can change on mouseover
+        self.fg = BLACK # text color
+
+        self.font = pygame.font.Font(None, 20)
+        self.txt = str(txt)
+        self.txt_surf = self.font.render(self.txt, 1, self.fg)
+        self.txt_rect = self.txt_surf.get_rect(center=[int(s//2) for s in size])
+
+        self.surface = pygame.surface.Surface(size)
+        self.rect = self.surface.get_rect(center=pos)
+
+    def draw(self, screen):
+        self.mouseover()
+ 
+        self.surface.fill(self.bg)
+        self.surface.blit(self.txt_surf, self.txt_rect)
+        screen.blit(self.surface, self.rect)
+
+    def mouseover(self):
+        self.bg = self.color
+        pos = pygame.mouse.get_pos()
+        if self.rect.collidepoint(pos):
+            self.bg = GREY
+        
+
+    def call_back(self):
+        self.color = GREY
+        return self.txt
+
+class PlayerSpriteHandler():
+    def __init__(self, name, pos):
+        self.name = name
+        if pos == "Ouest":
+            self.x_ann = 10
+            self.y_ann = 300
+            self.x_card = 250
+            self.y_card = 140
+            self.x_name = 10
+            self.y_name = 280
+        elif pos == "Nord":
+            self.x_ann = 350
+            self.y_ann = 30
+            self.x_card = 350
+            self.y_card = 50
+            self.x_name = 350
+            self.y_name = 10
+        elif pos == "Est":
+            self.x_ann = 700
+            self.y_ann = 300
+            self.x_card = 450
+            self.y_card = 140
+            self.x_name = 700
+            self.y_name = 280
+        elif pos == "Sud":
+            self.x_ann = 350
+            self.y_ann = 380
+            self.x_card = 350
+            self.y_card = 200
+            self.x_name = 350
+            self.y_name = 580
+        else:
+            print("ERROR")
+            sys.exit()
+
+        self.pos = pos
+        self.last_annonce = None
+        self.nameSprite = TextSprite(self.name, [self.x_name, self.y_name], 20)
+        self.annonceSprite = TextSprite("", [self.x_ann, self.y_ann], 20)
+        self.card = None
+
+    def annonce(self, val):
+        self.last_annonce = val
+        if val == None:
+            val = ""
+        self.annonceSprite.update_msg(val)
+
+    def play(self, card):
+        self.card = card
+        self.card.rect.x = self.x_card
+        self.card.rect.y = self.y_card
+
+    def draw(self, screen):
+        self.nameSprite.draw(screen)
+        self.annonceSprite.draw(screen)
+        if self.card:
+            self.card.draw(screen)
 #def getKey():
 #    while 1:
 #        event = pygame.event.poll()

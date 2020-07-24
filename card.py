@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import pygame
-ATOUT = ["J", "9", "AS", "10", "K", "Q", "8", "7"]
-NORMAL = ["AS", "10", "K", "Q", "J", "9", "8", "7"]
-TRAD = {"♤" : "pique", "♡" : "coeur", "♢" : "carreau", "♧" : "trefle",
-        "pique" : "♤", "coeur" : "♡", "carreau" : "♢", "trefle" : "♧"}
+from defines import *
 
 class Card(pygame.sprite.Sprite):
     def __init__(self, name, client, translate=False):
