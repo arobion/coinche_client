@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 import random
 import sys
-
-
+import time
 import pygame
-from pygame.locals import *
+from pygame.locals import KEYDOWN, K_BACKSPACE, K_RETURN
 
+from pygame_utils import (
+        TextSprite, InputSprite, ButtonSprite, PlayerSpriteHandler,
+        calc_buttonValue_pos, calc_buttonColor_pos,
+    )
 from card import Card
-from defines import *
-from pygame_utils import *
+from defines import GREEN, WHITE, BLACK, FRAMERATE, TIME_SCORE
 from server_com import Client
 
 
@@ -53,7 +55,7 @@ class GuiHandler():
         self.tmp_val = None
         self.tmp_color = None
         self.playables = []
-    
+
     def init(self):
         self.screen.fill(GREEN)
         self.state += 1
@@ -61,7 +63,7 @@ class GuiHandler():
     def quit(self):
         print('quit on exit')
         sys.exit(0)
-    
+
     def wait_players(self):
         text = pygame.font.Font(None, 40).render("Waiting for 4 players, don't worry", 1, BLACK)
         self.screen.blit(text, (200,50))
@@ -277,7 +279,6 @@ class GuiHandler():
         self.display_func = self.display_annonce
         self.state = 2
 
-
     def get_from_server(self):
         if len(self.client.queue) != 0:
             msg = self.client.queue.pop(0).split(" ")
@@ -308,7 +309,7 @@ class GuiHandler():
             self.client.send_server("annonce passe")
             self.state = 1
             self.display_func = self.nothing
-            return 
+            return
         if self.tmp_val and self.tmp_color:
             self.client.send_server("annonce " + self.tmp_val + " " + self.tmp_color)
             self.state = 1
@@ -350,7 +351,7 @@ class GuiHandler():
             player.draw(self.screen)
         for sprite in self.sprites:
             sprite.draw(self.screen)
-    
+
     def main_loop(self):
         self.listen_pygame_event()
 
