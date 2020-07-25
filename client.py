@@ -112,6 +112,8 @@ class GuiHandler():
                 sprite.draw(self.screen)
             pygame.display.flip()
             self.clock.tick(FRAMERATE)
+        for player in self.players.values():
+            player.card = None
 
     def display_annonce(self):
 #        for card in self.hand:
@@ -303,12 +305,12 @@ class GuiHandler():
         self.check_values(pos)
         self.check_color(pos)
         if self.tmp_val == "passe":
-            self.client.send_server("passe")
+            self.client.send_server("annonce passe")
             self.state = 1
             self.display_func = self.nothing
             return 
         if self.tmp_val and self.tmp_color:
-            self.client.send_server(self.tmp_val + " " + self.tmp_color)
+            self.client.send_server("annonce " + self.tmp_val + " " + self.tmp_color)
             self.state = 1
             self.display_func = self.nothing
             return
@@ -317,7 +319,7 @@ class GuiHandler():
         pos = pygame.mouse.get_pos()
         for card in self.hand:
             if card.rect.collidepoint(pos) and card in self.playables:
-                self.client.send_server(card.name)
+                self.client.send_server("play " + card.name)
                 self.hand.remove(card)
                 for elem in self.playables:
                     elem.moveDown()
