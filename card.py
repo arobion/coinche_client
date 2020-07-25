@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
 import pygame
-from defines import *
+
+from defines import NORMAL, TRAD, ATOUT
+
 
 class Card(pygame.sprite.Sprite):
     def __init__(self, name, client, translate=False):
@@ -81,7 +83,7 @@ class Card(pygame.sprite.Sprite):
             return '\033[92m' + s + '\033[0m'
         else:
             return s
-    
+
     def translate_name(self, name):
         mots = name.split(" ")
         if len(mots) != 2:
@@ -90,7 +92,7 @@ class Card(pygame.sprite.Sprite):
             mots[0] = mots[0].upper()
             mots[1] = mots[1].lower()
             return mots[0] + TRAD[mots[1]]
-        except KeyError as e:
+        except KeyError:
             return "wrong"
 
     def position(self):
@@ -109,7 +111,7 @@ class Card(pygame.sprite.Sprite):
         else:
             self.is_atout = False
             self.order = NORMAL
-    
+
     # used to sort
     def __lt__(self, other):
         if self.client.atout == "coeur":

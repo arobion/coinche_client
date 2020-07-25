@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-import time
+import sys
 import pygame
-from pygame.locals import *
 
-from defines import *
+from defines import BLACK, WHITE, GREY
+
 
 class TextSprite():
     def __init__(self, msg, position, font_size, font_color=BLACK, font_type=None, timer=None):
@@ -12,10 +12,9 @@ class TextSprite():
         self.font_size = font_size
         self.font_color = font_color
         self.font_type = font_type
-
         self.font_object = pygame.font.Font(font_type, font_size)
         self.text = self.font_object.render(msg, 1, font_color)
-        
+
     def update_msg(self, new_msg):
         self.msg = new_msg
         self.text = self.font_object.render(new_msg, 1, self.font_color)
@@ -73,7 +72,7 @@ class ButtonSprite(pygame.sprite.Sprite):
 
     def draw(self, screen):
         self.mouseover()
- 
+
         self.surface.fill(self.bg)
         self.surface.blit(self.txt_surf, self.txt_rect)
         screen.blit(self.surface, self.rect)
@@ -83,7 +82,7 @@ class ButtonSprite(pygame.sprite.Sprite):
         pos = pygame.mouse.get_pos()
         if self.rect.collidepoint(pos):
             self.bg = GREY
-        
+
 
     def call_back(self):
         self.color = GREY
@@ -186,7 +185,7 @@ def calc_buttonValue_pos(start, pos):
     spacing = 60
     total_size = total * spacing
     padding = 800 - total_size
-    x_dep = padding / 2 
+    x_dep = padding / 2
     num = int((pos - start) / 10)
     x = x_dep + (spacing * num) + 10
     return (x, y)
