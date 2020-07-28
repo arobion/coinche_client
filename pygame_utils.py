@@ -145,39 +145,6 @@ class PlayerSpriteHandler():
         self.annonceSprite.draw(screen)
         if self.card:
             self.card.draw(screen)
-#def getKey():
-#    while 1:
-#        event = pygame.event.poll()
-#        if event.type == KEYDOWN:
-#            return event.key
-#        else:
-#            pass
-#
-#def popup(screen, message, width, height, x , y, bgColor, textColor):
-#    fontobject = pygame.font.Font(None,25)
-#    pygame.draw.rect(screen, bgColor, (x, y, width, height), 0)
-#    pygame.draw.rect(screen, (255, 255, 255), (x, y - 5, width, height), 1)
-#    if len(message) != 0:
-#        screen.blit(fontobject.render(message, 1, textColor), (x + 5, y))
-#    pygame.display.flip()
-#
-#def get_input(screen, width, height, x, y, bgcolor, textcolor):
-#    input = []
-#    popup(screen, "", width, height, x, y, bgcolor, textcolor)
-#    upperCase = False
-#    while 1:
-#        inkey = getKey()
-#        if inkey == K_BACKSPACE:
-#            input = input[0:-1]
-#        elif inkey == K_RETURN:
-#            return "".join(input)
-#        elif inkey == K_LSHIFT or inkey == K_RSHIFT:
-#            upperCase = not upperCase
-#        elif inkey <= 255:
-#            if (inkey>=97 and inkey<=122) and upperCase==True:
-#                inkey-=32
-#            input.append(chr(inkey))
-#        popup(screen, "".join(input), width, height, x, y, bgcolor, textcolor)
 
 def calc_buttonValue_pos(start, pos):
     y = 150
@@ -192,7 +159,7 @@ def calc_buttonValue_pos(start, pos):
 
 def calc_buttonColor_pos(name):
     y = 200
-    start_x = 200
+    start_x = 100
     spacing = 120
-    x = {"pique": start_x, "coeur" : start_x + (spacing), "trefle" : start_x + (2 * spacing), "carreau" : start_x + (3 * spacing)}[name]
+    x = {"pique": start_x, "coeur" : start_x + (spacing), "trefle" : start_x + (2 * spacing), "carreau" : start_x + (3 * spacing), "tout atout" : start_x + (4 * spacing), "sans atout" : start_x + (5 *spacing)}[name]
     return (x, y)

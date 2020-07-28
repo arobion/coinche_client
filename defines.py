@@ -9,5 +9,3 @@ TIME_SCORE = 1
 
 ATOUT = ["J", "9", "AS", "10", "K", "Q", "8", "7"]
 NORMAL = ["AS", "10", "K", "Q", "J", "9", "8", "7"]
-TRAD = {"♤" : "pique", "♡" : "coeur", "♢" : "carreau", "♧" : "trefle",
-        "pique" : "♤", "coeur" : "♡", "carreau" : "♢", "trefle" : "♧"}

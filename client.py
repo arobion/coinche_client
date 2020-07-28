@@ -118,8 +118,6 @@ class GuiHandler():
             player.card = None
 
     def display_annonce(self):
-#        for card in self.hand:
-#            card.draw(self.screen)
         for button in self.buttons_value:
             button.draw(self.screen)
         for button in self.buttons_color:
@@ -141,11 +139,7 @@ class GuiHandler():
 
     def get_card(self, args):
         joueur = args.pop(0)
-        card = ""
-        for elem in args:
-            card += elem + " "
-        card = card[:-1]
-        card = Card(card, self)
+        card = Card(args[0], args[1], self)
         self.pli_courant.append(card)
         if len(self.pli_courant) == 4:
             self.pli_courant = []
@@ -155,7 +149,7 @@ class GuiHandler():
                 elem.card = None
                 elem.annonce("")
         card.set_atout(self.atout)
-        self.players[joueur].play(Card(card.name, self))
+        self.players[joueur].play(Card(card.value, card.color, self))
 
     def get_cards(self, args):
         self.hand = []
@@ -165,7 +159,8 @@ class GuiHandler():
         self.atout = None
         for card in args:
             if card != '':
-                self.hand.append(Card(card, self))
+                splited_card = card.split("_")
+                self.hand.append(Card(splited_card[0], splited_card[1], self))
         self.hand.sort()
         self.gui_sort()
         self.display_func = self.nothing
@@ -274,7 +269,7 @@ class GuiHandler():
         for val in range(dep, 181, 10):
             self.buttons_value.append(ButtonSprite(val, calc_buttonValue_pos(dep, val)))
         self.buttons_value.append(ButtonSprite("passe", [350, 280], size=(100, 30)))
-        for color in ["coeur", "pique", "carreau", "trefle"]:
+        for color in ["coeur", "pique", "carreau", "trefle", "tout atout", "sans atout"]:
             self.buttons_color.append(ButtonSprite(color, calc_buttonColor_pos(color), size=(100, 30)))
         self.display_func = self.display_annonce
         self.state = 2

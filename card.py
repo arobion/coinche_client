@@ -2,21 +2,20 @@
 import os
 import pygame
 
-from defines import NORMAL, TRAD, ATOUT
+from defines import NORMAL, ATOUT
 
 
 class Card(pygame.sprite.Sprite):
-    def __init__(self, name, client, translate=False):
+    def __init__(self, value, color, client, translate=False):
         ## Coinche part
         if translate == True:
             name = self.translate_name(name)
-        self.name = name
-        self.color = name[-1]
-        self.value = name[:-1]
+        self.name = value + " " + color
+        self.color = color
+        self.value = value
         self.is_atout = False
         self.order = NORMAL
         self.client = client
-        self.str = self.strize(name)
         self.up = False
 
         ## Sprite part
@@ -50,8 +49,8 @@ class Card(pygame.sprite.Sprite):
     def get_path_sprite(self):
         path = os.getcwd()
         path += "/card_images/"
-        val = self.name[:-1]
-        color = self.name[-1]
+        val = self.value
+        color = self.color
         if val == "AS":
             path += "as"
         elif val == "K":
@@ -63,26 +62,16 @@ class Card(pygame.sprite.Sprite):
         else:
             path += val
         path += "_"
-        if color == "♤":
+        if color == "pique":
             path += "pique.png"
-        elif color == "♡":
+        elif color == "coeur":
             path += "coeur.png"
-        elif color == "♢":
+        elif color == "carreau":
             path += "carreau.png"
-        elif color == "♧":
+        elif color == "trefle":
             path += "trefle.png"
 
         return path
-
-    def strize(self, s):
-        if self.color == "♡": # red
-            return '\033[91m' + s + '\033[0m'
-        elif self.color == "♢": # blue
-            return '\033[94m' + s + '\033[0m'
-        if self.color == "♧": # green
-            return '\033[92m' + s + '\033[0m'
-        else:
-            return s
 
     def translate_name(self, name):
         mots = name.split(" ")
@@ -105,7 +94,7 @@ class Card(pygame.sprite.Sprite):
         elif atout == "t_a":
             self.is_atout = True
             self.order = ATOUT
-        elif self.color == TRAD[atout]:
+        elif self.color == atout:
             self.is_atout = True
             self.order = ATOUT
         else:
@@ -115,13 +104,13 @@ class Card(pygame.sprite.Sprite):
     # used to sort
     def __lt__(self, other):
         if self.client.atout == "coeur":
-             colors = ["♡", "♤","♢", "♧"]
+            colors = ["coeur", "pique", "carreau", "trefle"]
         elif self.client.atout == "trefle":
-            colors = ["♧", "♡", "♤", "♢"]
+            colors = ["trefle", "coeur", "pique", "carreau"]
         elif self.client.atout == "carreau":
-            colors = ["♢", "♤","♡", "♧"]
+            colors = ["carreau", "pique", "coeur", "trefle"]
         else:
-            colors = ["♤", "♡", "♧", "♢"]
+            colors = ["pique", "coeur", "trefle", "carreau"]
         if self.color == other.color:
             return self.position() < other.position()
         else:
@@ -151,7 +140,7 @@ class Card(pygame.sprite.Sprite):
             return False
 
     def __str__(self):
-        return self.str
+        return self.name
 
     def __repr__(self):
-        return self.str
+        return self.name
