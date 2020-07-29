@@ -170,17 +170,14 @@ class GuiHandler():
         if val == "passe" or val == "0":
             return
         mots = val.split(" ")
-        self.highest_annonce = int(mots[0])
-        self.atout = mots[1]
+        self.highest_annonce = int(mots.pop(0))
+        self.atout = " ".join(mots)
         for card in self.hand:
             card.set_atout(self.atout)
 
     def get_annonce(self, args):
         joueur = args.pop(0)
-        val = ""
-        for elem in args:
-            val += elem + " "
-        val = val[:-1]
+        val = " ".join(args)
         self.update_annonce(val)
         if val == "0":
             val = "passe"
@@ -190,7 +187,7 @@ class GuiHandler():
         return [elem for elem in self.hand if elem.color == card.color]
 
     def get_atouts(self):
-        return [elem for elem in self.hand if elem.is_atout == True]
+        return [elem for elem in self.hand if elem.color == self.atout]
 
     def get_best_card(self):
         best = self.pli_courant[0]
@@ -207,48 +204,41 @@ class GuiHandler():
             return True
         return False
 
-    def get_atout_above(self, lst):
-        best = None
-        for card in self.pli_courant:
-            if card.is_atout == True:
-                if best == None:
-                    best = card
-                elif best.position() > card.position():
-                    best = card
-        if best == None:
-            return lst
+    def get_cards_above(self, my_cards, played):
+        best_atout_played = None
+        for card in played:
+            if card.color == my_cards[0].color:
+                if best_atout_played == None:
+                    best_atout_played = card
+                elif best_atout_played.position() > card.position():
+                    best_atout_played = card
+        if best_atout_played == None:
+            return my_cards
         ret = []
-        for card in lst:
-            if best.position() > card.position():
+        for card in my_cards:
+            if best_atout_played.position() > card.position():
                 ret.append(card)
         if ret == []:
-            return lst
+            return my_cards
         return ret
 
     def get_playables(self):
         if len(self.pli_courant) == 0:
             return self.hand
         same_colors = self.get_same_colors(self.pli_courant[0])
-        check_atout = 0
         if same_colors != []:
-            playables = same_colors
-            if playables[0].is_atout:
-                check_atout = 1
+            if same_colors[0].is_atout == True:
+                return self.get_cards_above(same_colors, self.pli_courant)
+            else:
+                return same_colors
         else:
             if self.partenaire_win() == True:
-                playables = self.hand
-                check_atout = 0
+                return self.hand
+            atouts = self.get_atouts()
+            if atouts != []:
+                return self.get_cards_above(atouts, self.pli_courant)
             else:
-                atouts = self.get_atouts()
-                if atouts == []:
-                    playables = self.hand
-                    check_atout = 0
-                else:
-                    playables = atouts
-                    check_atout = 1
-        if check_atout == 1:
-            playables = self.get_atout_above(playables)
-        return playables
+                return self.hand
 
     def play(self):
         self.playables = self.get_playables()
