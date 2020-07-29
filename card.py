@@ -88,11 +88,11 @@ class Card(pygame.sprite.Sprite):
         return self.order.index(self.value)
 
     def set_atout(self, atout):
-        if atout == "s_a":
+        if atout == "sans atout":
             self.is_atout = False
             self.order = NORMAL
-        elif atout == "t_a":
-            self.is_atout = True
+        elif atout == "tout atout":
+            self.is_atout = False
             self.order = ATOUT
         elif self.color == atout:
             self.is_atout = True
