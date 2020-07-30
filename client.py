@@ -10,7 +10,7 @@ from pygame_utils import (
         calc_buttonValue_pos, calc_buttonColor_pos,
     )
 from card import Card
-from defines import GREEN, WHITE, BLACK, FRAMERATE, TIME_SCORE
+from defines import GREEN, WHITE, BLACK, FRAMERATE, TIME_SCORE, TIME_PLI
 from server_com import Client
 
 
@@ -101,19 +101,15 @@ class GuiHandler():
         elif args[1] == "remporte":
             self.players[args[0]].annonce("win")
 
+    def wait_timer(self, time_to_wait):
+        timer = time.time() + time_to_wait
+        while time.time() < timer:
+            self.display_loop(False, FRAMERATE - 20)
+
     def get_score(self, args):
         msg = " ".join(args)
         self.sprites.append(TextSprite(msg, (30, 450), 28))
-        timer = time.time() + TIME_SCORE
-        while time.time() < timer:
-            self.listen_pygame_event()
-            self.screen.fill(GREEN)
-            for player in self.players.values():
-                player.draw(self.screen)
-            for sprite in self.sprites:
-                sprite.draw(self.screen)
-            pygame.display.flip()
-            self.clock.tick(FRAMERATE)
+        self.wait_timer(TIME_SCORE)
         for player in self.players.values():
             player.card = None
 
@@ -137,26 +133,33 @@ class GuiHandler():
         self.sprites.append(TextSprite("contrat : {} {}".format(self.highest_annonce, self.atout), (640, 580), 20))
         self.state = 1
 
+
     def get_card(self, args):
         joueur = args.pop(0)
         card = Card(args[0], args[1], self)
+        card.set_atout(self.atout)
         self.pli_courant.append(card)
-        if len(self.pli_courant) == 4:
-            self.pli_courant = []
         if len(self.pli_courant) == 1:
             self.current_color = card.color
             for elem in self.players.values():
                 elem.card = None
                 elem.annonce("")
-        card.set_atout(self.atout)
         self.players[joueur].play(Card(card.value, card.color, self))
+        if len(self.pli_courant) == 4:
+            self.wait_timer(TIME_PLI)
+            self.pli_courant = []
 
-    def get_cards(self, args):
+    def reset(self):
         self.hand = []
         self.sprites = []
         self.highest_annonce = 0
         self.pli_courant = []
         self.atout = None
+        for player in self.players.values():
+            player.annonce("")
+
+    def get_cards(self, args):
+        self.reset()
         for card in args:
             if card != '':
                 splited_card = card.split("_")
@@ -337,10 +340,11 @@ class GuiHandler():
         for sprite in self.sprites:
             sprite.draw(self.screen)
 
-    def main_loop(self):
+    def display_loop(self, server=True, framerate=FRAMERATE):
         self.listen_pygame_event()
 
-        self.get_from_server()
+        if server == True:
+            self.get_from_server()
         self.display()
         pygame.display.flip()
         self.clock.tick(FRAMERATE)
@@ -402,7 +406,7 @@ class GuiHandler():
         pygame.display.set_caption("Pycoinche")
         self.display_func = self.create_ip_screen # first screen
 
-        while self.main_loop() == True:
+        while self.display_loop() == True:
             pass
         print("exit with false")
 
