@@ -318,14 +318,12 @@ class GuiHandler():
             self.client.send_server("annonce passe")
             self.buttons_value = []
             self.buttons_color = []
-#            self.state = 1
             self.display_func = self.nothing
             return
         if self.tmp_val and self.tmp_color:
             self.client.send_server("annonce " + self.tmp_val + " " + self.tmp_color)
             self.buttons_value = []
             self.buttons_color = []
-#            self.state = 1
             self.display_func = self.nothing
             return
         if self.tmp_val == "coinche":
@@ -333,7 +331,6 @@ class GuiHandler():
             self.button_coinche = None
             self.buttons_value = []
             self.buttons_color = []
-#            self.state = 1
             self.display_func = self.nothing
 
 
@@ -349,7 +346,6 @@ class GuiHandler():
                 return
 
     def check_click(self):
-        print(self.state)
         if self.state == 2:
             self.parse_annonce()
         elif self.state == 3:
