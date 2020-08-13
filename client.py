@@ -10,7 +10,7 @@ from pygame_utils import (
         calc_buttonValue_pos, calc_buttonColor_pos,
     )
 from card import Card
-from defines import GREEN, WHITE, BLACK, FRAMERATE, TIME_SCORE, TIME_PLI
+from defines import GREEN, WHITE, BLACK, RED, FRAMERATE, TIME_SCORE, TIME_PLI
 from server_com import Client
 
 
@@ -23,6 +23,9 @@ class GuiHandler():
         self.ip = None
         self.name = None
         self.sprites = []
+        self.button_coinche = None
+        self.buttons_value = []
+        self.buttons_color = []
 
         # pointer to diplay_function
         self.display_func = None
@@ -126,13 +129,15 @@ class GuiHandler():
             i += 1
 
     def get_contract(self, args):
+        self.button_coinche = None
         self.hand.sort()
         self.gui_sort()
         for player in self.players.values():
             player.annonce("")
         self.sprites.append(TextSprite("contrat : {} {}".format(self.highest_annonce, self.atout), (640, 580), 20))
+        self.buttons_value = []
+        self.buttons_color = []
         self.state = 1
-
 
     def get_card(self, args):
         joueur = args.pop(0)
@@ -167,10 +172,18 @@ class GuiHandler():
         self.hand.sort()
         self.gui_sort()
         self.display_func = self.nothing
-        self.state = 1
+        self.state = 2
+
+    def handle_coinche(self, joueur, val):
+        if joueur == self.name or self.players[joueur].pos == "Nord":
+            if val != "0":
+                self.button_coinche = None
+        else:
+            if val != "0":
+                self.button_coinche = ButtonSprite("coinche", (470, 280), (100, 30), bg=RED, fg=WHITE)
 
     def update_annonce(self, val):
-        if val == "passe" or val == "0":
+        if val == "passe" or val == "0" or val == "coinche":
             return
         mots = val.split(" ")
         self.highest_annonce = int(mots.pop(0))
@@ -181,9 +194,12 @@ class GuiHandler():
     def get_annonce(self, args):
         joueur = args.pop(0)
         val = " ".join(args)
+        self.handle_coinche(joueur, val)
         self.update_annonce(val)
         if val == "0":
             val = "passe"
+        if val =="coinche":
+            print('objection')
         self.players[joueur].annonce(val)
 
     def get_same_colors(self, card):
@@ -281,6 +297,11 @@ class GuiHandler():
                 self.tmp_val = button.call_back()
             else:
                 button.color = WHITE
+        if self.button_coinche:
+            if self.button_coinche.rect.collidepoint(pos):
+                self.tmp_val = self.button_coinche.call_back()
+                self.button_coinche.color = RED
+
 
     def check_color(self, pos):
         for button in self.buttons_color:
@@ -295,14 +316,26 @@ class GuiHandler():
         self.check_color(pos)
         if self.tmp_val == "passe":
             self.client.send_server("annonce passe")
-            self.state = 1
+            self.buttons_value = []
+            self.buttons_color = []
+#            self.state = 1
             self.display_func = self.nothing
             return
         if self.tmp_val and self.tmp_color:
             self.client.send_server("annonce " + self.tmp_val + " " + self.tmp_color)
-            self.state = 1
+            self.buttons_value = []
+            self.buttons_color = []
+#            self.state = 1
             self.display_func = self.nothing
             return
+        if self.tmp_val == "coinche":
+            self.client.send_server("coinche {}".format(self.name))
+            self.button_coinche = None
+            self.buttons_value = []
+            self.buttons_color = []
+#            self.state = 1
+            self.display_func = self.nothing
+
 
     def parse_card(self):
         pos = pygame.mouse.get_pos()
@@ -316,6 +349,7 @@ class GuiHandler():
                 return
 
     def check_click(self):
+        print(self.state)
         if self.state == 2:
             self.parse_annonce()
         elif self.state == 3:
@@ -330,6 +364,10 @@ class GuiHandler():
             elif event.type == KEYDOWN:
                 self.update_input(event.key)
 
+    def display_button_coinche(self):
+        if self.button_coinche:
+            self.button_coinche.draw(self.screen)
+
     def display(self):
         self.screen.fill(GREEN)
         self.display_func()
@@ -339,6 +377,7 @@ class GuiHandler():
             player.draw(self.screen)
         for sprite in self.sprites:
             sprite.draw(self.screen)
+        self.display_button_coinche()
 
     def display_loop(self, server=True, framerate=FRAMERATE):
         self.listen_pygame_event()
