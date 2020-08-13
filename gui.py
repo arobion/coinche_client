@@ -326,14 +326,12 @@ class GuiHandler():
             self.client.write_server(self.msg.send_passe())
             self.buttons_value = []
             self.buttons_color = []
-            #self.state = 1
             self.display_func = self.nothing
             return
         if self.tmp_val and self.tmp_color:
             self.client.write_server(self.msg.send_annonce(self.tmp_val, self.tmp_color))
             self.buttons_value = []
             self.buttons_color = []
-            #self.state = 1
             self.display_func = self.nothing
             return
         if self.tmp_val == "coinche":
@@ -341,7 +339,6 @@ class GuiHandler():
             self.button_coinche = None
             self.buttons_value = []
             self.buttons_color = []
-            #self.state = 1
             self.display_func = self.nothing
 
     def parse_card(self):
