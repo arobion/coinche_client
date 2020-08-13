@@ -36,6 +36,11 @@ class CoincheMsgFormatter():
         return msg
 
     @format(action_method)
+    def send_coinche(self, name):
+        msg = 'coinche {}'.format(self.name)
+        return msg
+
+    @format(action_method)
     def send_passe(self):
         msg = 'annonce passe'
         return msg
