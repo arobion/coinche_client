@@ -6,6 +6,7 @@ import threading
 class Client():
     def __init__(self):
         self.sock = self._create_sock()
+        self.lock = threading.Lock()
         self.queue = []
 
     def _create_sock(self):
@@ -17,8 +18,10 @@ class Client():
             raise e
 
     def _read_server(self):
-        for elem in self.sock.recv(1024).decode('utf8').split('|'):
-            self.queue.append(elem)
+        recv = self.sock.recv(1024).decode('utf-8')
+        self.lock.acquire()
+        self.queue.append(recv)
+        self.lock.release()
 
     def _wait_for_server(self):
         while True:
