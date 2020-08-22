@@ -3,16 +3,18 @@
 import random
 import sys
 import time
+
 import pygame
 from pygame.locals import KEYDOWN, K_BACKSPACE, K_RETURN
-
 from pygame_utils import (
         TextSprite, InputSprite, ButtonSprite, PlayerSpriteHandler,
         calc_buttonValue_pos, calc_buttonColor_pos,
     )
+
 from card import Card
 from defines import GREEN, WHITE, BLACK, FRAMERATE, TIME_SCORE, TIME_PLI
 from client import Client
+from msg_formatter import CoincheMsgFormatter
 
 
 class GuiHandler():
@@ -28,22 +30,25 @@ class GuiHandler():
         # pointer to diplay_function
         self.display_func = None
 
-        self.actions = {
-            "name" : self.create_name_screen,
-            "make_annonce" : self.make_annonce_screen,
-            "play" : self.play,
-        }
-        self.infos = {
-            "get_cards" : self.get_cards,
-            "annonce" : self.get_annonce,
-            "annonce_finale" : self.get_contract,
-            "card" : self.get_card,
-            "score" : self.get_score,
-            "print" : self.echo,
+        self.events = {
+            'ACTION': {
+                "name" : self.create_name_screen,
+                "make_annonce" : self.make_annonce_screen,
+                "play" : self.play,
+            },
+            'INFO': {
+                "get_cards" : self.get_cards,
+                "annonce" : self.get_annonce,
+                "annonce_finale" : self.get_contract,
+                "card" : self.get_card,
+                "score" : self.get_score,
+                "print" : self.echo,
+            },
         }
 
         # server_vars
         self.client = Client()
+        self.msg = CoincheMsgFormatter()
 
         # coinche_vars
         self.hand = [] # contains sprites
@@ -269,12 +274,14 @@ class GuiHandler():
         self.state = 2
 
     def get_from_server(self):
+        self.client.lock.acquire()
         if len(self.client.queue) != 0:
-            msg = self.client.queue.pop(0).split(" ")
-            if msg[0] == "info":
-                self.infos[msg[1]](msg[2:])
-            if msg[0] == "action":
-                self.actions[msg[1]]()
+            self.client.queue, method, args = self.msg.received_msg(self.client.queue)
+            if method == 'ACTION':
+                self.events[method][args[0]]()
+            else:
+                self.events[method][args[0]](args[1:])
+        self.client.lock.release()
 
     def check_values(self, pos):
         for button in self.buttons_value:
@@ -295,12 +302,12 @@ class GuiHandler():
         self.check_values(pos)
         self.check_color(pos)
         if self.tmp_val == "passe":
-            self.client.send_server("annonce passe")
+            self.client.write_server(self.msg.send_passe())
             self.state = 1
             self.display_func = self.nothing
             return
         if self.tmp_val and self.tmp_color:
-            self.client.send_server("annonce " + self.tmp_val + " " + self.tmp_color)
+            self.client.write_server(self.msg.send_annonce(self.tmp_val, self.tmp_color))
             self.state = 1
             self.display_func = self.nothing
             return
@@ -309,7 +316,7 @@ class GuiHandler():
         pos = pygame.mouse.get_pos()
         for card in self.hand:
             if card.rect.collidepoint(pos) and card in self.playables:
-                self.client.send_server("play " + card.name)
+                self.client.write_server(self.msg.send_play(card.name))
                 self.hand.remove(card)
                 for elem in self.playables:
                     elem.moveDown()
@@ -378,7 +385,7 @@ class GuiHandler():
             self.name = self.inputSprite.msg
             if self.name == '':
                 self.name = "player_{}".format(random.randint(0, 10000))
-            self.client.send_server(self.name)
+            self.client.write_server(self.msg.send_name(self.name))
             self.display_func = self.wait_players
             self.inputSprite.msg = ""
             self.sprites = []
