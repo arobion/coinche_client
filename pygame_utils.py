@@ -56,11 +56,11 @@ class InputSprite(TextSprite):
             self.uppercase = not self.uppercase
 
 class ButtonSprite(pygame.sprite.Sprite):
-    def __init__(self, txt, pos, size=(40, 40)):
+    def __init__(self, txt, pos, size=(40, 40), bg=WHITE, fg=BLACK):
         super().__init__()
-        self.color = WHITE  # the static (normal) color
+        self.color = bg  # the static (normal) color
         self.bg = self.color  # actual background color, can change on mouseover
-        self.fg = BLACK # text color
+        self.fg = fg # text color
 
         self.font = pygame.font.Font(None, 20)
         self.txt = str(txt)
