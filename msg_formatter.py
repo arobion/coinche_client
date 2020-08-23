@@ -2,6 +2,7 @@
 
 from functools import wraps
 
+
 class CoincheMsgFormatter():
 
     END = '#ENDCRN'

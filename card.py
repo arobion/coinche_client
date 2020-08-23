@@ -9,7 +9,9 @@ class Card(pygame.sprite.Sprite):
     def __init__(self, value, color, client, translate=False):
         ## Coinche part
         if translate == True:
-            name = self.translate_name(name)
+            # TODO var name where did she come from?
+            # name = self.translate_name(name)
+            pass
         self.name = value + " " + color
         self.color = color
         self.value = value
@@ -80,7 +82,10 @@ class Card(pygame.sprite.Sprite):
         try:
             mots[0] = mots[0].upper()
             mots[1] = mots[1].lower()
-            return mots[0] + TRAD[mots[1]]
+            # TODO var TRAD where did she come from?
+            # is the function still useful?
+            # return mots[0] + TRAD[mots[1]]
+            return
         except KeyError:
             return "wrong"
 

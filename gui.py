@@ -13,7 +13,7 @@ from pygame_utils import (
 
 from card import Card
 from defines import GREEN, WHITE, BLACK, FRAMERATE, TIME_SCORE, TIME_PLI
-from client import Client
+from client_gui import ClientGUI
 from msg_formatter import CoincheMsgFormatter
 
 
@@ -47,7 +47,7 @@ class GuiHandler():
         }
 
         # server_vars
-        self.client = Client()
+        self.client = ClientGUI()
         self.msg = CoincheMsgFormatter()
 
         # coinche_vars
@@ -375,9 +375,11 @@ class GuiHandler():
             self.inputSprite.msg = ""
             self.sprites = []
             if self.client.connect(ip):
-                # Server not found
+                # TODO signal server not found
                 self.create_ip_screen()
-            self.display_func = self.nothing
+            else:
+                self.client.run_client()
+                self.display_func = self.nothing
 
     def wait_name(self):
         pygame.draw.rect(self.screen, WHITE, (202, 195, 200, 30), 1)
