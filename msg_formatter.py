@@ -37,7 +37,7 @@ class CoincheMsgFormatter():
 
     @format(action_method)
     def send_coinche(self, name):
-        msg = 'coinche {}'.format(self.name)
+        msg = 'coinche {}'.format(name)
         return msg
 
     @format(action_method)
